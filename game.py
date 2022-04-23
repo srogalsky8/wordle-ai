@@ -4,11 +4,12 @@ input = open('data/CSW19-5.txt')
 class Game:
   __all_words = [line.strip() for line in input]
   def __init__(self, word = None, max_guesses = 6):
+    # TODO: supplied word must be in dictionary
     self.__max_guesses = max_guesses
     self.__guesses = 0
+    self.__status = 'in progress'
     if not word:
       self.__word = self.__choose_random_start()
-      print('chose random word ' + self.word)
     else:
       self.__word = word
 
@@ -22,18 +23,26 @@ class Game:
       return 'yellow'
     return 'gray'
 
-  def evaluate_guess(self, guess):
-    if guess not in self.__all_words:
-      return { 'outcome': 'retry', 'reason': 'Must enter exactly 5 letters'}
-    if len(guess != 5):
-      return { 'outcome': 'retry', 'reason': 'Must enter exactly 5 letters'}
-    self.__guesses += 1
-    feedback = {letter: self.__evaluate_letter(letter, pos) for pos, letter in enumerate(guess)}
-    if(feedback.values
-    return {
-      'outcome': 'win',
-      'feedback': feedback
-    }
+  def get_status():
+    return self.__status
 
-Game()
-Game.evaluate_guess('g')
+  def get_guesses():
+    return self.__guesses
+
+  def evaluate_guess(self, guess):
+    if self.__status != 'in progress': 
+      return { 'outcome': 'fail', 'reason': 'Game is over'}
+    if guess.upper() not in self.__all_words:
+      return { 'outcome': 'fail', 'reason': 'Word is not in dictionary'}
+    self.__guesses += 1
+    feedback = [(letter, self.__evaluate_letter(letter, pos)) for pos, letter in enumerate(guess)]
+    # win
+    if [outcome for (letter, outcome) in feedback] == ['green', 'green', 'green', 'green', 'green']:
+      self.__status = 'win'
+    # lost
+    if self.__guesses >= 6:
+      self.__status = 'loss'
+    return { 'outcome': 'success', 'status': self.__status, 'feedback': feedback }
+
+# game = Game('trace')
+# turn = game.evaluate_guess('track')
