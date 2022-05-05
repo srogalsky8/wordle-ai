@@ -3,13 +3,6 @@ from common_words import common_words
 import string
 import pandas as pd
 
-df = pd.read_csv("./data/Wordle letter frequencies.txt", sep = '\t')
-
-df_letters = df.set_index('Letter')
-first_word_freq = df_letters['Overall'].nlargest(5)
-
-print(first_word_freq)
-
 def filter_words(eligible_words, feedback):
     eligible = eligible_words
     # filter words with green matches
@@ -35,10 +28,16 @@ def filter_words(eligible_words, feedback):
             eligible = { word: letters for (word, letters) in eligible.items() if letter not in letters}
     return eligible
 
+def get_top_word(potential_words):
+    letter_counts = {}
+    for word in potential_words:
+        for letter in list(word):
+            letter_counts[letter] = letter_counts.get(letter, 0)+1
+    print(letter_counts)
+    return 'trace'
+
 # Turn 2
 game = Game(word='taste')
-
-
 # TODO: start with all_words and prioritize common words in guess
 potential_words = {word: list(word) for word in common_words}
 guesses = []
@@ -51,6 +50,7 @@ while game.get_status() == 'in progress':
     if last_turn and last_turn['feedback']:
         # TODO: sort by words which have no repeated letters
         potential_words = filter_words(potential_words, last_turn['feedback'])
+        guess = get_top_word(list(potential_words.keys()))
         guess = list(potential_words.keys())[0]
     print(f'Guessing {guess}')
     last_turn = game.evaluate_guess(guess)
@@ -67,17 +67,3 @@ elif game.get_status() == 'loss':
     print(f'Noooo \U0001F616 we lost after {game.get_guesses()} turns')
 else:
     print(f'\U0001F450 I don\'t know what happened')
-
-
-#get most freq letter on each turn
-turn=['1','2','3','4','5']
-most_freq=[]
-for i in range(5):
-    sort=sorted(df[turn[i]].values, reverse=True)[:5]
-    letter=[df['Letter'][df[turn[i]].values==sort[j]].values for j in range(5)]
-    letters=[letter[j][0] for j in range(5)]
-    most_freq.append(letters)
-#['S', 'C', 'B', 'T', 'P'] - first turn
-#get list of potential words from the common list based on most freq letters
-
-potential_guess=[i for i in common_words if i in most_freq[0]]
