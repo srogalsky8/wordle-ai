@@ -2,13 +2,26 @@ from game import Game
 from common_words import common_words
 import string
 import pandas as pd
+import json
+
+with open('/Users/jackchak/Documents/GitHub/wordle-ai/data/freq_map.json') as json_file:
+    data = json.load(json_file)
 
 df = pd.read_csv("./data/Wordle letter frequencies.txt", sep = '\t')
 
-df_letters = df.set_index('Letter')
-first_word_freq = df_letters['Overall'].nlargest(5)
 
-print(first_word_freq)
+#function to suggest starting characters before guessing words
+def suggest_chars_turn_zero():
+    best_chars = []
+    df_letters_original = df.set_index('Letter')
+    print("Consider the following letters:")
+    first_word_freq = df_letters_original['Overall'].nlargest(5)
+    for letter in first_word_freq.index:
+        best_chars.append(letter)
+    print(best_chars)
+# turn zero
+suggest_chars_turn_zero()
+
 
 def filter_words(eligible_words, feedback):
     eligible = eligible_words
@@ -38,20 +51,33 @@ def filter_words(eligible_words, feedback):
 # Turn 2
 game = Game(word='taste')
 
+input = open('data/CSW19-5.txt')
+all_words = [line.strip().lower() for line in input]
 
 # TODO: start with all_words and prioritize common words in guess
-potential_words = {word: list(word) for word in common_words}
+potential_words = {word: list(word) for word in all_words}
 guesses = []
 guess = 'oiled'
 last_turn = None
 
+
+#dict.keys() for keys
+#dict.values() for values
+#set filter == something
+
 while game.get_status() == 'in progress':
     print(f'DOING TURN {game.get_guesses()+1}')
     potential_words = {word: list(word) for word in potential_words.keys()} # reset
+    #filter the potential words by the top frequencies of the data dictionary
+    
     if last_turn and last_turn['feedback']:
         # TODO: sort by words which have no repeated letters
         potential_words = filter_words(potential_words, last_turn['feedback'])
-        guess = list(potential_words.keys())[0]
+        #guess = list(potential_words.keys())[0]
+    better_words = {word: data[word] for word in potential_words}
+    better_words = sorted(better_words.items(), key=lambda x: x[1], reverse=True)
+    #uses the first suggestion
+    (guess, frequencies) = better_words[0]
     print(f'Guessing {guess}')
     last_turn = game.evaluate_guess(guess)
     if last_turn['outcome'] == 'success':
