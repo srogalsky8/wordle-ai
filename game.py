@@ -1,6 +1,5 @@
 import random as random
 from common_words import common_words
-random.seed(8)
 input = open('data/CSW19-5.txt')
 
 class Game:
@@ -62,7 +61,3 @@ class Game:
     elif self.__guesses >= self.__max_guesses: # lost
       self.__status = 'loss'
     return { 'outcome': 'success', 'status': self.__status, 'feedback': feedback }
-
-# game1 = Game('trace')
-# game2 = Game
-# turn = game.evaluate_guess('track')
