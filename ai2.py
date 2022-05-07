@@ -3,6 +3,12 @@ from common_words import common_words
 import pandas as pd
 import json
 
+input = open('data/CSW19-5.txt')
+all_words = [line.strip().lower() for line in input]
+with open('./data/freq_map.json') as json_file:
+    data = json.load(json_file)
+df = pd.read_csv("./data/Wordle letter frequencies.txt", sep = '\t')
+
 def filter_words(eligible_words, feedback):
     eligible = eligible_words
     # filter words with green matches
@@ -15,13 +21,14 @@ def filter_words(eligible_words, feedback):
     for (position, letter_feedback) in enumerate(feedback):
         (letter, color) = letter_feedback
         if(color == 'yellow'):
-            eligible = {
-                word: [None if i == position else l for i, l in enumerate(letters)]
-                for (word, letters) in eligible.items()
-                if letter in letters and letters[position] != letter
-            }
+            new_eligible = {}
+            for (word, letters) in eligible.items():
+                if letter in letters and letters[position] != letter:
+                    letters[letters.index(letter)] = None
+                    new_eligible[word] = letters
+            eligible = new_eligible
 
-    # filter based on yellows
+    # filter based on grays
     for (position, letter_feedback) in enumerate(feedback):
         (letter, color) = letter_feedback
         if(color == 'gray'):
@@ -50,9 +57,6 @@ def get_word_by_letter_freq(potential_words, past_guesses):
     (word, count) = sorted(scores.items(), key=lambda x: x[1], reverse=True)[0]
     return word
 
-with open('./data/freq_map.json') as json_file:
-    data = json.load(json_file)
-df = pd.read_csv("./data/Wordle letter frequencies.txt", sep = '\t')
 # based on frequency in english dictionary
 def get_word_by_freq(potential_words):
     better_words = {word: data[word] for word in potential_words}
@@ -61,10 +65,7 @@ def get_word_by_freq(potential_words):
     return guess
 
 
-input = open('data/CSW19-5.txt')
-all_words = [line.strip().lower() for line in input]
-
-def play_game(show_output = False):
+def play_game(starting_word = None, show_output = False):
     game = Game()
     # TODO: start with all_words and prioritize common words in guess
     potential_words = {word: list(word) for word in all_words}
@@ -76,9 +77,12 @@ def play_game(show_output = False):
         potential_words = {word: list(word) for word in potential_words.keys()} # reset
         if last_turn and last_turn['feedback']:
             potential_words = filter_words(potential_words, last_turn['feedback'])
-        guess = get_word_by_freq(list(potential_words.keys()))
-        # guess = get_word_by_letter_freq(list(potential_words.keys()), guesses)
-        # guess = list(potential_words.keys())[0] # naive choice
+        if starting_word and game.get_guesses() == 0:
+            guess = starting_word
+        else:
+            guess = get_word_by_freq(list(potential_words.keys()))
+            # guess = get_word_by_letter_freq(list(potential_words.keys()), guesses)
+            # guess = list(potential_words.keys())[0] # naive choice
         show_output and print(f'Guessing {guess}')
         last_turn = game.evaluate_guess(guess)
         if last_turn['outcome'] == 'success':
@@ -94,17 +98,24 @@ def play_game(show_output = False):
         elif game.get_status() == 'loss':
             print(f'Noooo \U0001F616 we lost after {game.get_guesses()} turns')
             print(f'The word was {game.get_word()}')
+            print(f'The guesses were {guesses}')
         else:
             print(f'\U0001F450 I don\'t know what happened')
+        
+    return game
 
-    if(game.get_status() == 'loss'):
-        print(f'lost {game.get_word()}')
-        print(guesses)
-    return game.get_status()
+def simulate(trials = 1000, starting_word = None, show_output = False):
+    wins = 0
+    total_guesses = 0
+    for i in range(0,trials):
+        game = play_game(starting_word, show_output)
+        if game.get_status() == 'win':
+            wins += 1
+        total_guesses += game.get_guesses()
 
-results = []
-trials = 100
-for i in range(0,trials):
-    results.append(play_game(show_output = False))
+    p_wins = wins/trials
+    print(f'Won {p_wins*100}% of {trials} games, averaging {total_guesses/trials} guesses per game')
+    return p_wins
 
-print(f'Won {(results.count("win")/trials)*100}% of {trials} games')
+# play_game(show_output=True)
+simulate()

@@ -47,13 +47,13 @@ class Game:
         feedback[idx] = (letter, 'green')
         answer_array[idx] = None # remove from answer array
         guess_array[idx] = '-' # Don't evaluate this one again
-    
+
     # check for yellows
     for idx, letter in enumerate(guess_array):
       if letter in answer_array:
         feedback[idx] = (letter, 'yellow')
-        answer_array[idx] = None # remove from answer array
-        guess_array[idx] = '-' # remove from answer array
+        answer_array[answer_array.index(letter)] = None # remove from answer array
+        guess_array[idx] = '-' # remove from guess array
 
     # win
     if [outcome for (letter, outcome) in feedback] == ['green', 'green', 'green', 'green', 'green']:
