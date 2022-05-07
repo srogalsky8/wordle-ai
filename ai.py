@@ -2,6 +2,7 @@ from game import Game
 from common_words import common_words
 import pandas as pd
 import json
+from freq_map_cutoff import freq_data
 
 input = open('data/CSW19-5.txt')
 all_words = [line.strip().lower() for line in input]
@@ -53,8 +54,9 @@ def get_word_by_letter_freq(potential_words, past_guesses):
             del letter_counts[letter]
 
     # for each potential word, get a freq score
-    scores = { word: sum([letter_counts.get(letter, 0) for letter in set(list(word))]) for word in potential_words }
+    scores = { word: sum([letter_counts.get(letter, 0) for letter in set(list(word))])*freq_data[word] for word in potential_words }
     (word, count) = sorted(scores.items(), key=lambda x: x[1], reverse=True)[0]
+
     return word
 
 # based on frequency in english dictionary
@@ -80,8 +82,8 @@ def play_game(starting_word = None, show_output = False):
         if starting_word and game.get_guesses() == 0:
             guess = starting_word
         else:
-            guess = get_word_by_freq(list(potential_words.keys()))
-            # guess = get_word_by_letter_freq(list(potential_words.keys()), guesses)
+            # guess = get_word_by_freq(list(potential_words.keys()))
+            guess = get_word_by_letter_freq(list(potential_words.keys()), guesses)
             # guess = list(potential_words.keys())[0] # naive choice
         show_output and print(f'Guessing {guess}')
         last_turn = game.evaluate_guess(guess)
