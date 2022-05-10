@@ -2,7 +2,7 @@ from game import Game
 from common_words import common_words
 import pandas as pd
 import json
-from freq_map_cutoff import freq_data
+from freq_map_cutoff import freq_data, scaled_data
 
 input = open('data/CSW19-5.txt')
 all_words = [line.strip().lower() for line in input]
@@ -39,9 +39,11 @@ def filter_words(eligible_words, feedback):
 # based on frequency of remaining letters
 def get_word_by_letter_freq(potential_words, past_guesses):
     letter_counts = {}
+    multipliers = scaled_data
     for word in potential_words:
+        multiplier = multipliers[word]
         for letter in word:
-            letter_counts[letter] = letter_counts.get(letter, 0)+1
+            letter_counts[letter] = letter_counts.get(letter, 0)+multiplier
     # get letters we've guessed already
     guessed_letters = []
     for guess in past_guesses:
@@ -54,7 +56,7 @@ def get_word_by_letter_freq(potential_words, past_guesses):
             del letter_counts[letter]
 
     # for each potential word, get a freq score
-    scores = { word: sum([letter_counts.get(letter, 0) for letter in set(list(word))])*freq_data[word] for word in potential_words }
+    scores = { word: sum([letter_counts.get(letter, 0) for letter in set(list(word))])*multipliers[word] for word in potential_words }
     (word, count) = sorted(scores.items(), key=lambda x: x[1], reverse=True)[0]
 
     return word
@@ -82,8 +84,11 @@ def play_game(starting_word = None, show_output = False):
         if starting_word and game.get_guesses() == 0:
             guess = starting_word
         else:
-            # guess = get_word_by_freq(list(potential_words.keys()))
             guess = get_word_by_letter_freq(list(potential_words.keys()), guesses)
+            # if game.get_guesses() <= 3:
+            #     guess = get_word_by_letter_freq(list(potential_words.keys()), guesses)
+            # else:
+            #     guess = get_word_by_freq(list(potential_words.keys()))
             # guess = list(potential_words.keys())[0] # naive choice
         show_output and print(f'Guessing {guess}')
         last_turn = game.evaluate_guess(guess)
@@ -120,30 +125,4 @@ def simulate(trials = 1000, starting_word = None, show_output = False):
     return p_wins
 
 # play_game(show_output=True)
-simulate()
-
-# #get most freq letter on each turn
-# turn=['1','2','3','4','5']
-# most_freq=[]
-# for i in range(5):
-#     sort=sorted(df[turn[i]].values, reverse=True)[:5]
-#     letter=[df['Letter'][df[turn[i]].values==sort[j]].values for j in range(5)]
-#     letters=[letter[j][0] for j in range(5)]
-#     most_freq.append(letters)
-# #['S', 'C', 'B', 'T', 'P'] - first turn
-# #get list of potential words from the common list based on most freq letters
-
-# potential_guess=[i for i in common_words if i in most_freq[0]]
-
-
-# #function to suggest starting characters before guessing words
-# def suggest_chars_turn_zero():
-#     best_chars = []
-#     df_letters_original = df.set_index('Letter')
-#     print("Consider the following letters:")
-#     first_word_freq = df_letters_original['Overall'].nlargest(5)
-#     for letter in first_word_freq.index:
-#         best_chars.append(letter)
-#     print(best_chars)
-# # turn zero
-# suggest_chars_turn_zero()
+simulate(starting_word='stale')
